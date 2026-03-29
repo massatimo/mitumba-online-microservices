@@ -1,0 +1,11 @@
+{
+  "name": "mitumba-online-microservices",
+  "version": "1.0.0",
+  "description": "Cloud-native microservices marketplace for Uganda mitumba trade",
+  "scripts": {
+    "dev": "concurrently \"cd user-services && npm run dev\" \"cd product-services && npm run dev\" \"cd order-services && npm run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
