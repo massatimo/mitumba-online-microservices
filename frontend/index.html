@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mitumba Online - Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans">
+
+<div class="max-w-6xl mx-auto p-6">
+  <h1 class="text-4xl font-bold text-center text-blue-700 mb-8">Mitumba Online</h1>
+  
+  <!-- Login Section -->
+  <div id="loginSection">
+    <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-lg">
+      <h2 class="text-2xl font-semibold mb-6 text-center">Login</h2>
+      <input id="email" type="email" placeholder="Email" class="w-full p-3 border rounded-lg mb-4">
+      <input id="password" type="password" placeholder="Password" class="w-full p-3 border rounded-lg mb-4">
+      <button onclick="login()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium">Login</button>
+      <p class="text-center text-sm mt-4">Demo Vendor: masai@owino.market / password123</p>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="mainApp" class="hidden">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-semibold">Welcome, <span id="userName" class="text-blue-600"></span></h2>
+      <button onclick="logout()" class="text-red-600 hover:underline">Logout</button>
+    </div>
+
+    <!-- Create Product -->
+    <div class="bg-white p-6 rounded-xl shadow mb-8">
+      <h3 class="text-xl font-semibold mb-4">Add New Product (Vendor)</h3>
+      <div class="grid grid-cols-2 gap-4">
+        <input id="title" placeholder="Title" class="p-3 border rounded-lg">
+        <input id="price" type="number" placeholder="Price (UGX)" class="p-3 border rounded-lg">
+        <select id="condition" class="p-3 border rounded-lg">
+          <option value="New">New</option>
+          <option value="Gently Used">Gently Used</option>
+          <option value="Used">Used</option>
+          <option value="Fagi">Fagi</option>
+        </select>
+        <input id="size" placeholder="Size (S/M/L/XL)" class="p-3 border rounded-lg">
+      </div>
+      <button onclick="createProduct()" class="mt-4 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg">Add Product</button>
+    </div>
+
+    <!-- Search & Products -->
+    <div class="bg-white p-6 rounded-xl shadow">
+      <h3 class="text-xl font-semibold mb-4">Products</h3>
+      <input id="searchInput" type="text" placeholder="Search products..." class="w-full p-3 border rounded-lg mb-4" onkeyup="if(event.key==='Enter') searchProducts()">
+      <button onclick="searchProducts()" class="bg-blue-600 text-white px-6 py-2 rounded-lg">Search</button>
+
+      <div id="productsList" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Products will appear here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let token = localStorage.getItem('token');
+
+  // Check if already logged in
+  if (token) showMainApp();
+
+  async function login() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    const res = await fetch('http://localhost:3001/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      token = data.data.token;
+      localStorage.setItem('token', token);
+      showMainApp();
+    } else {
+      alert(data.message || 'Login failed');
+    }
+  }
+
+  function showMainApp() {
+    document.getElementById('loginSection').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    document.getElementById('userName').textContent = "Vendor";
+    searchProducts();
+  }
+
+  async function createProduct() {
+    const product = {
+      title: document.getElementById('title').value,
+      price: Number(document.getElementById('price').value),
+      condition: document.getElementById('condition').value,
+      size: document.getElementById('size').value
+    };
+
+    const res = await fetch('http://localhost:3002/api/products', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(product)
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      alert('Product created successfully!');
+      searchProducts();
+    } else {
+      alert(data.message);
+    }
+  }
+
+  async function searchProducts() {
+    const res = await fetch('http://localhost:3002/api/products');
+    const data = await res.json();
+
+    const container = document.getElementById('productsList');
+    container.innerHTML = '';
+
+    data.data.forEach(p => {
+      const div = document.createElement('div');
+      div.className = "border rounded-xl p-4 bg-white shadow";
+      div.innerHTML = `
+        <h4 class="font-semibold">${p.title}</h4>
+        <p class="text-sm text-gray-600">${p.condition} • ${p.size}</p>
+        <p class="text-xl font-bold text-green-600">UGX ${p.price}</p>
+        <p class="text-xs text-gray-500">Stock: ${p.stock}</p>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    location.reload();
+  }
+</script>
+
+</body>
+</html>
