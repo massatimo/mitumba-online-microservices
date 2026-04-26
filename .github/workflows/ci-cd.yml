@@ -1,0 +1,49 @@
+name: CI/CD Pipeline - Mitumba Online
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies (Root)
+        run: npm ci
+
+      - name: Install dependencies (User Service)
+        run: cd user-service && npm ci
+
+      - name: Install dependencies (Product Service)
+        run: cd product-service && npm ci
+
+      - name: Install dependencies (Order Service)
+        run: cd order-service && npm ci
+
+      - name: Build Docker images
+        run: docker-compose build
+
+      - name: Run services with Docker Compose
+        run: docker-compose up -d
+
+      - name: Health Check
+        run: |
+          sleep 10
+          curl -f http://localhost:3001/health || exit 1
+          curl -f http://localhost:3002/health || exit 1
+          curl -f http://localhost:3003/health || exit 1
+
+      - name: Show logs
+        if: always()
+        run: docker-compose logs
